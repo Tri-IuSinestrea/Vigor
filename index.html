@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vigor &mdash; Premium Calorie, Nutrient & Water Tracker</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Vigor is a highly interactive, modern calorie tracker featuring micronutrient tracking, Mifflin-St Jeor and Katch-McArdle calculations, water logs, custom food databases, and real-time Open Food Facts internet searches.">
+  <meta name="keywords" content="calorie counter, macro tracker, micronutrient log, water tracker, TDEE calculator, body weight tracker, nutrition app">
+  <meta name="author" content="Vigor Fitness Team">
+
+  <!-- Style Sheets -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Food Database and Core App Scripts (Load early, non-module for offline double-click support) -->
+  <script src="food_db.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- HEADER AND METRIC SYSTEM BANNER -->
+    <header>
+      <div class="header-top">
+        <div class="header-logo">
+          <!-- Premium Vigor SVG Shield Logo -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M12 8v8"></path>
+            <path d="M9 11h6"></path>
+          </svg>
+          <h1>Vigor</h1>
+        </div>
+
+        <!-- Date Swapper navigation -->
+        <div class="date-selector" id="date-navigation-widget">
+          <button class="btn-nav-date" onclick="changeDate(-1)" id="btn-prev-day" title="Previous Day">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          
+          <div class="current-date-display" id="date-picker-trigger">
+            <span id="date-display-text">Today</span>
+            <input type="date" id="header-date-input" title="Choose specific date">
+          </div>
+
+          <button class="btn-nav-date" onclick="changeDate(1)" id="btn-next-day" title="Next Day">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dynamic Motivational Quotes Card -->
+      <div class="quote-card" id="daily-quote-card">
+        <div class="quote-content">
+          <span id="quote-text">"Tracking is the key to awareness, and awareness is the key to transformation."</span>
+          <span class="quote-author" id="quote-author">&mdash; Vigor Coach</span>
+        </div>
+        <button class="btn-refresh-quote" onclick="setDailyQuote(true)" id="btn-cycle-quote" title="Get New Quote">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- CORE STRIP OVERVIEW SUMMARY -->
+    <section class="stats-strip" id="top-level-stats-strip">
+      <!-- Calories Item -->
+      <div class="card stat-item calories-theme" id="stat-card-calories">
+        <div class="stat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Calories</span>
+          <span class="stat-value" id="calories-intake-val">0 / 2500 kcal</span>
+          <span class="stat-subtext" id="calories-sub-val">2500 kcal remaining</span>
+        </div>
+      </div>
+      
+      <!-- Protein Item -->
+      <div class="card stat-item protein-theme" id="stat-card-protein">
+        <div class="stat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Protein</span>
+          <span class="stat-value" id="protein-val">0g / 150g</span>
+          <span class="stat-subtext">Building Block</span>
+        </div>
+      </div>
+
+      <!-- Carbohydrates Item -->
+      <div class="card stat-item carbs-theme" id="stat-card-carbs">
+        <div class="stat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M12 2v20M2 12h20"></path></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Carbs</span>
+          <span class="stat-value" id="carbs-val">0g / 275g</span>
+          <span class="stat-subtext">Energy Supply</span>
+        </div>
+      </div>
+
+      <!-- Fats Item -->
+      <div class="card stat-item fat-theme" id="stat-card-fat">
+        <div class="stat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Fats</span>
+          <span class="stat-value" id="fat-val">0g / 83g</span>
+          <span class="stat-subtext">Hormonal Health</span>
+        </div>
+      </div>
+
+      <!-- Water Item -->
+      <div class="card stat-item water-theme" id="stat-card-water">
+        <div class="stat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Water Log</span>
+          <span class="stat-value" id="water-val">0ml / 3300ml</span>
+          <span class="stat-subtext">Optimal Hydration</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN TWO-COLUMN DASHBOARD WORKSPACE -->
+    <main class="main-grid" id="dashboard-main-grid">
+      
+      <!-- LEFT COLUMN: DIALS, LOGS, WATER -->
+      <div class="dashboard-column" id="dashboard-left-column">
+        
+        <!-- Large Calorie Ring Progress Card -->
+        <section class="card" id="card-calorie-dials">
+          <div class="calorie-centerpiece">
+            <!-- Large circular progress ring -->
+            <div class="progress-ring-container">
+              <svg width="200" height="200">
+                <!-- Background track circle -->
+                <circle cx="100" cy="100" r="85" fill="transparent" stroke="rgba(255, 255, 255, 0.03)" stroke-width="12"></circle>
+                <!-- Animated fill circle -->
+                <circle id="progress-circle-fill" cx="100" cy="100" r="85" fill="transparent" stroke="var(--color-calories)" stroke-width="12" stroke-linecap="round" class="progress-ring-circle" stroke-dasharray="534 534" stroke-dashoffset="534"></circle>
+              </svg>
+              <!-- Center ring text labels -->
+              <div class="ring-labels">
+                <span class="ring-calories-remaining" id="centerpiece-remaining-cals">2500</span>
+                <span class="ring-calories-label" id="centerpiece-remaining-label">Remaining</span>
+                <span class="ring-calories-total" id="centerpiece-total-target">Goal: 2500 kcal</span>
+              </div>
+            </div>
+
+            <!-- Linear Macro Progress Gauges -->
+            <div class="macronutrient-gauges">
+              <!-- Protein -->
+              <div class="macro-gauge-item" id="gauge-protein">
+                <div class="macro-gauge-header">
+                  <span class="macro-name"><span class="macro-dot macro-p-dot"></span>Protein</span>
+                  <span class="macro-values" id="protein-pct-text">0g (0%)</span>
+                </div>
+                <div class="macro-gauge-bar">
+                  <div class="macro-gauge-fill p-fill" id="protein-fill-bar"></div>
+                </div>
+              </div>
+              
+              <!-- Carbs -->
+              <div class="macro-gauge-item" id="gauge-carbs">
+                <div class="macro-gauge-header">
+                  <span class="macro-name"><span class="macro-dot macro-c-dot"></span>Carbs</span>
+                  <span class="macro-values" id="carbs-pct-text">0g (0%)</span>
+                </div>
+                <div class="macro-gauge-bar">
+                  <div class="macro-gauge-fill c-fill" id="carbs-fill-bar"></div>
+                </div>
+              </div>
+
+              <!-- Fats -->
+              <div class="macro-gauge-item" id="gauge-fat">
+                <div class="macro-gauge-header">
+                  <span class="macro-name"><span class="macro-dot macro-f-dot"></span>Fats</span>
+                  <span class="macro-values" id="fat-pct-text">0g (0%)</span>
+                </div>
+                <div class="macro-gauge-bar">
+                  <div class="macro-gauge-fill f-fill" id="fat-fill-bar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Dynamic Daily Meal Log Blocks -->
+        <section class="card" id="card-meal-logs">
+          <div class="section-title-bar">
+            <h2>Daily Food Log</h2>
+            <div class="section-actions">
+              <button class="btn-secondary btn-sm" onclick="switchTab('search'); document.getElementById('food-search-input').focus();" title="Search food DB">Add Food</button>
+            </div>
+          </div>
+
+          <!-- Breakfast Block -->
+          <div class="meal-block" id="meal-breakfast-block">
+            <div class="meal-header">
+              <div class="meal-title-group">
+                <svg class="meal-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <h3 class="meal-name">Breakfast</h3>
+              </div>
+              <span class="meal-calories-summary">Total: <span class="meal-calories-value" id="breakfast-cals-sum">0 kcal</span></span>
+            </div>
+            <div class="meal-items-list" id="meal-breakfast-list">
+              <div class="empty-meal-text">No logged items for this meal</div>
+            </div>
+          </div>
+
+          <!-- Lunch Block -->
+          <div class="meal-block" id="meal-lunch-block">
+            <div class="meal-header">
+              <div class="meal-title-group">
+                <svg class="meal-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                <h3 class="meal-name">Lunch</h3>
+              </div>
+              <span class="meal-calories-summary">Total: <span class="meal-calories-value" id="lunch-cals-sum">0 kcal</span></span>
+            </div>
+            <div class="meal-items-list" id="meal-lunch-list">
+              <div class="empty-meal-text">No logged items for this meal</div>
+            </div>
+          </div>
+
+          <!-- Dinner Block -->
+          <div class="meal-block" id="meal-dinner-block">
+            <div class="meal-header">
+              <div class="meal-title-group">
+                <svg class="meal-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+                <h3 class="meal-name">Dinner</h3>
+              </div>
+              <span class="meal-calories-summary">Total: <span class="meal-calories-value" id="dinner-cals-sum">0 kcal</span></span>
+            </div>
+            <div class="meal-items-list" id="meal-dinner-list">
+              <div class="empty-meal-text">No logged items for this meal</div>
+            </div>
+          </div>
+
+          <!-- Snacks Block -->
+          <div class="meal-block" id="meal-snack-block">
+            <div class="meal-header">
+              <div class="meal-title-group">
+                <svg class="meal-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>
+                <h3 class="meal-name">Snacks & Treats</h3>
+              </div>
+              <span class="meal-calories-summary">Total: <span class="meal-calories-value" id="snack-cals-sum">0 kcal</span></span>
+            </div>
+            <div class="meal-items-list" id="meal-snack-list">
+              <div class="empty-meal-text">No logged items for this meal</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Water Hydration Card -->
+        <section class="card" id="card-water-tracker">
+          <h2 class="mb-4">Water Tracker</h2>
+          <div class="water-tracker-content">
+            <!-- Animated Water Cup SVG -->
+            <div class="water-visual-container">
+              <svg viewBox="0 0 100 140" class="water-cup-svg">
+                <!-- Cup Glass Frame Outer Layer -->
+                <path d="M10,10 L25,130 Q27,135 32,135 L68,135 Q73,135 75,130 L90,10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="3" stroke-linecap="round"></path>
+                
+                <!-- Fluid level container (Clipped using a matching inner cup shape) -->
+                <clipPath id="cup-clip">
+                  <path d="M11,13 L25.5,129 Q27,133 32,133 L68,133 Q73,133 74.5,129 L89,13 Z"></path>
+                </clipPath>
+
+                <!-- Water fill rectangle -->
+                <g clip-path="url(#cup-clip)">
+                  <!-- Wave effects group -->
+                  <g class="water-level-wave">
+                    <rect id="water-fill-rect" x="-50" y="130" width="200" height="0" fill="url(#water-grad)" class="water-level-fill"></rect>
+                  </g>
+                </g>
+
+                <!-- Linear Gradient for realistic water look -->
+                <defs>
+                  <linearGradient id="water-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"></stop>
+                    <stop offset="100%" stop-color="#0284c7" stop-opacity="0.95"></stop>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+
+            <!-- Water details & Controls -->
+            <div class="water-controls-panel">
+              <div class="water-progress-text">
+                <span class="water-current" id="water-tracker-current">0 ml</span>
+                <span class="water-target" id="water-tracker-target">/ 3300 ml</span>
+              </div>
+              
+              <div class="water-buttons-grid">
+                <button class="btn-water" onclick="addWater(250)" id="btn-water-250">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
+                  250ml
+                </button>
+                <button class="btn-water" onclick="addWater(500)" id="btn-water-500">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
+                  500ml
+                </button>
+                <button class="btn-water" onclick="addWater(750)" id="btn-water-750">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
+                  750ml
+                </button>
+                <button class="btn-water-reset" onclick="resetWater()" id="btn-water-reset">Reset Water Logs</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN: SECTIONS WORKSPACE & MICRONUTRIENTS -->
+      <div class="dashboard-column" id="dashboard-right-column">
+        
+        <!-- Interactive Section Tab Controls -->
+        <nav class="tab-headers" aria-label="Utility sections">
+          <button class="tab-btn active" data-tab="search" onclick="switchTab('search')" id="tab-btn-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Search Food
+          </button>
+          <button class="tab-btn" data-tab="custom" onclick="switchTab('custom')" id="tab-btn-custom">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
+            Database
+          </button>
+          <button class="tab-btn" data-tab="profile" onclick="switchTab('profile')" id="tab-btn-profile">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Profile
+          </button>
+        </nav>
+
+        <!-- TAB CONTENT 1: SEARCH FOOD (LOCAL & INTERNET INTERFACE) -->
+        <section class="card tab-content active" id="tab-search">
+          <div class="search-input-wrapper">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="food-search-input" placeholder="Type food name (e.g. apple, yogurt)..." oninput="onSearchInputChange()" autocomplete="off">
+          </div>
+
+          <!-- Network API Query loader status text -->
+          <div class="network-search-status hidden" id="internet-search-indicator">
+            <!-- Animated spinning circle -->
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+            <span>Searching online...</span>
+          </div>
+
+          <!-- Search outputs list container -->
+          <div class="search-results-list" id="search-results-container">
+            <div class="search-empty-state">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <span>Search food from local database or type to search online database...</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB CONTENT 2: DATABASE SYSTEM MANAGER -->
+        <section class="card tab-content" id="tab-custom">
+          <div class="db-actions">
+            <button class="btn-primary" onclick="openModal('modal-custom-food')" id="btn-open-custom-modal">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Create Food
+            </button>
+            <button class="btn-secondary" onclick="switchTab('search'); document.getElementById('food-search-input').focus();">Quick Add</button>
+          </div>
+          
+          <div class="db-list" id="db-list-container">
+            <!-- Custom list items auto generated by script -->
+          </div>
+        </section>
+
+        <!-- TAB CONTENT 3: CALCULATORS & USER PROFILE PROFILE -->
+        <section class="card tab-content" id="tab-profile">
+          <div class="profile-card-content">
+            <div class="section-title-bar">
+              <h3>My Metrics Profile</h3>
+              <button class="btn-secondary btn-sm" onclick="openProfileModal()" id="btn-edit-profile" title="Configure physical settings">Edit</button>
+            </div>
+            
+            <div class="profile-settings-preview">
+              <div class="profile-preview-item">
+                <span class="profile-preview-label">Gender</span>
+                <span class="profile-preview-value" id="prev-profile-gender">Male</span>
+              </div>
+              <div class="profile-preview-item">
+                <span class="profile-preview-label">Age</span>
+                <span class="profile-preview-value" id="prev-profile-age">30 yrs</span>
+              </div>
+              <div class="profile-preview-item">
+                <span class="profile-preview-label">Weight</span>
+                <span class="profile-preview-value" id="prev-profile-weight">80 kg</span>
+              </div>
+              <div class="profile-preview-item">
+                <span class="profile-preview-label">Height</span>
+                <span class="profile-preview-value" id="prev-profile-height">180 cm</span>
+              </div>
+              <div class="profile-preview-item">
+                <span class="profile-preview-label">Active Ratio</span>
+                <span class="profile-preview-value" id="prev-profile-activity">Moderate</span>
+              </div>
+              <div class="profile-preview-item">
+                <span class="profile-preview-label">Target Goal</span>
+                <span class="profile-preview-value" id="prev-profile-goal">Maintain</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PERSISTENT MICRONUTRIENTS CHECKLIST SIDEBAR -->
+        <section class="card" id="card-micronutrients">
+          <h2 class="mb-3">Daily Micronutrients</h2>
+          <div class="micronutrient-checklist" id="micronutrient-checklist-progress">
+            
+            <!-- Fiber Progress -->
+            <div class="micro-item-bar" id="micro-fiber">
+              <div class="micro-item-header">
+                <span>Dietary Fiber</span>
+                <span id="micro-fiber-text">0g / 38g (0%)</span>
+              </div>
+              <div class="micro-progress-container">
+                <div class="micro-progress-fill" id="micro-fiber-fill"></div>
+              </div>
+            </div>
+
+            <!-- Sodium Progress -->
+            <div class="micro-item-bar" id="micro-sodium">
+              <div class="micro-item-header">
+                <span>Sodium (Limit)</span>
+                <span id="micro-sodium-text">0mg / 2300mg (0%)</span>
+              </div>
+              <div class="micro-progress-container">
+                <div class="micro-progress-fill micro-sodium-fill" id="micro-sodium-fill"></div>
+              </div>
+            </div>
+
+            <!-- Potassium Progress -->
+            <div class="micro-item-bar" id="micro-potassium">
+              <div class="micro-item-header">
+                <span>Potassium</span>
+                <span id="micro-potassium-text">0mg / 3500mg (0%)</span>
+              </div>
+              <div class="micro-progress-container">
+                <div class="micro-progress-fill micro-potassium-fill" id="micro-potassium-fill"></div>
+              </div>
+            </div>
+
+            <!-- Calcium Progress -->
+            <div class="micro-item-bar" id="micro-calcium">
+              <div class="micro-item-header">
+                <span>Calcium</span>
+                <span id="micro-calcium-text">0mg / 1000mg (0%)</span>
+              </div>
+              <div class="micro-progress-container">
+                <div class="micro-progress-fill micro-calcium-fill" id="micro-calcium-fill"></div>
+              </div>
+            </div>
+
+            <!-- Iron Progress -->
+            <div class="micro-item-bar" id="micro-iron">
+              <div class="micro-item-header">
+                <span>Iron</span>
+                <span id="micro-iron-text">0mg / 8mg (0%)</span>
+              </div>
+              <div class="micro-progress-container">
+                <div class="micro-progress-fill micro-iron-fill" id="micro-iron-fill"></div>
+              </div>
+            </div>
+
+            <!-- Vitamin C Progress -->
+            <div class="micro-item-bar" id="micro-vitaminc">
+              <div class="micro-item-header">
+                <span>Vitamin C</span>
+                <span id="micro-vitamin-text">0mg / 90mg (0%)</span>
+              </div>
+              <div class="micro-progress-container">
+                <div class="micro-progress-fill micro-vitamin-fill" id="micro-vitamin-fill"></div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- BOTTOM ROW ARCHITECTURE SVG CHARTS -->
+    <section class="chart-card-grid" id="bottom-charts-section">
+      <!-- Donut macro distribution chart -->
+      <div class="card" id="card-chart-macro-donut">
+        <h2>Macronutrient Calories Split</h2>
+        <div class="donut-chart-wrapper">
+          <svg width="200" height="220" id="macro-donut-svg">
+            <!-- Dynamic SVG elements created by app.js -->
+          </svg>
+        </div>
+      </div>
+
+      <!-- Weekly history bar chart -->
+      <div class="card" id="card-chart-weekly-bar">
+        <h2>Weekly Calorie Intake History</h2>
+        <div style="margin-top: 1rem;">
+          <svg viewBox="0 0 450 150" class="weekly-history-svg" id="weekly-history-svg">
+            <!-- Dynamic SVG elements created by app.js -->
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER SIGNATURE -->
+    <footer>
+      <p>&copy; 2026 Vigor Calorie tracker. Built with premium dark-glassmorphism visuals. Open source health trackers.</p>
+    </footer>
+
+  </div>
+
+  <!-- MODALS SECTION LAYOUT OVERLAYS -->
+
+  <!-- MODAL 1: EDIT PROFILE & PHYSICAL TARGET CALCULATOR -->
+  <div class="modal-overlay" id="modal-profile">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Physical Profile</h2>
+        <button class="modal-close" onclick="closeModal('modal-profile')" aria-label="Close modal">&times;</button>
+      </div>
+      
+      <form id="profile-calculator-form" onsubmit="handleProfileFormSubmit(event)">
+        <div class="form-grid-2">
+          
+          <!-- Gender Select -->
+          <div class="form-group">
+            <label for="profile-gender">Gender</label>
+            <select id="profile-gender" required>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+
+          <!-- Age Input -->
+          <div class="form-group">
+            <label for="profile-age">Age (years)</label>
+            <input type="number" id="profile-age" min="1" max="120" required>
+          </div>
+
+          <!-- Weight Input -->
+          <div class="form-group">
+            <label for="profile-weight">Body Weight (kg)</label>
+            <input type="number" id="profile-weight" step="0.1" min="10" max="400" required>
+          </div>
+
+          <!-- Height Input -->
+          <div class="form-group">
+            <label for="profile-height">Height (cm)</label>
+            <input type="number" id="profile-height" step="0.1" min="50" max="250" required>
+          </div>
+
+          <!-- Body Fat Percentage Input -->
+          <div class="form-group">
+            <label for="profile-bodyfat">Body Fat % (Optional)</label>
+            <input type="number" id="profile-bodyfat" step="0.1" min="1" max="70" placeholder="e.g. 15">
+          </div>
+
+          <!-- Activity Level Multiplier -->
+          <div class="form-group">
+            <label for="profile-activity">Activity Level</label>
+            <select id="profile-activity" required>
+              <option value="sedentary">Sedentary (Little to no exercise)</option>
+              <option value="light">Lightly Active (Exercise 1-3 days/wk)</option>
+              <option value="moderate">Moderately Active (Exercise 3-5 days/wk)</option>
+              <option value="active">Very Active (Hard exercise 6-7 days/wk)</option>
+              <option value="extreme">Extremely Active (Athletic/Physical job)</option>
+            </select>
+          </div>
+
+          <!-- Target Goal Option -->
+          <div class="form-group full-width">
+            <label for="profile-goal">Target Goal</label>
+            <select id="profile-goal" required>
+              <option value="cut">Fat Loss (Deficit -500 kcal)</option>
+              <option value="maintain">Maintenance (TDEE Calories)</option>
+              <option value="bulk">Muscle Gain (Surplus +300 kcal)</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-profile')">Cancel</button>
+          <button type="submit" class="btn-primary" id="btn-save-profile">Calculate & Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CONFIRM ADD FOOD PORTION LOGGING -->
+  <div class="modal-overlay" id="modal-add-food">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="add-food-title">Add Food Item</h2>
+        <button class="modal-close" onclick="closeModal('modal-add-food')" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="add-food-form" onsubmit="handleAddFoodFormSubmit(event)">
+        
+        <!-- Meal Type Selector -->
+        <div class="form-group">
+          <label for="add-food-mealtype">Meal Selection</label>
+          <select id="add-food-mealtype" required>
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snacks & Treats</option>
+          </select>
+        </div>
+
+        <!-- Portion inputs -->
+        <div class="form-grid-2">
+          
+          <div class="form-group">
+            <label for="add-food-amount">Quantity / Portion</label>
+            <input type="number" id="add-food-amount" step="0.01" min="0.01" required oninput="updateAddFoodNutritionSummary()">
+          </div>
+
+          <div class="form-group">
+            <label for="add-food-unit">Measuring Unit</label>
+            <select id="add-food-unit" required onchange="updateAddFoodNutritionSummary()">
+              <option value="g">g</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Portioned Nutrition Details Summary Card -->
+        <div class="food-detail-summary-grid">
+          <div class="food-detail-item">
+            <span class="food-detail-val text-calories" id="modal-sum-cal">0 kcal</span>
+            <span class="food-detail-label">Calories</span>
+          </div>
+          <div class="food-detail-item">
+            <span class="food-detail-val text-protein" id="modal-sum-protein">0g</span>
+            <span class="food-detail-label">Protein</span>
+          </div>
+          <div class="food-detail-item">
+            <span class="food-detail-val text-carbs" id="modal-sum-carbs">0g</span>
+            <span class="food-detail-label">Carbs</span>
+          </div>
+          <div class="food-detail-item">
+            <span class="food-detail-val text-fat" id="modal-sum-fat">0g</span>
+            <span class="food-detail-label">Fat</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-add-food')">Cancel</button>
+          <button type="submit" class="btn-primary" id="btn-confirm-add-food">Log Food</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: CREATE CUSTOM FOOD ITEM -->
+  <div class="modal-overlay" id="modal-custom-food">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create Custom Food</h2>
+        <button class="modal-close" onclick="closeModal('modal-custom-food')" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="custom-food-form" onsubmit="handleCustomFoodFormSubmit(event)">
+        
+        <!-- General Info -->
+        <div class="form-group">
+          <label for="custom-name">Food Name</label>
+          <input type="text" id="custom-name" placeholder="e.g. Grandma's Apple Pie" required>
+        </div>
+
+        <!-- Primary Macros (Required) -->
+        <div class="form-grid-2">
+          
+          <div class="form-group">
+            <label for="custom-calories">Calories (kcal per 100g)</label>
+            <input type="number" id="custom-calories" min="0" required>
+          </div>
+
+          <div class="form-group">
+            <label for="custom-protein">Protein (g per 100g)</label>
+            <input type="number" id="custom-protein" step="0.1" min="0" required>
+          </div>
+
+          <div class="form-group">
+            <label for="custom-carbs">Carbs (g per 100g)</label>
+            <input type="number" id="custom-carbs" step="0.1" min="0" required>
+          </div>
+
+          <div class="form-group">
+            <label for="custom-fat">Fat (g per 100g)</label>
+            <input type="number" id="custom-fat" step="0.1" min="0" required>
+          </div>
+
+          <div class="form-group">
+            <label for="custom-fiber">Fiber (g per 100g)</label>
+            <input type="number" id="custom-fiber" step="0.1" min="0" value="0">
+          </div>
+
+          <div class="form-group">
+            <!-- Placeholder to balance grid -->
+          </div>
+
+        </div>
+
+        <!-- Optional custom serving sizes -->
+        <div style="margin: 0.5rem 0 1.25rem 0; border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 0.75rem;">
+          <h4 style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Custom Serving Unit (Optional)</h4>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="custom-serving-name">Serving Name</label>
+              <input type="text" id="custom-serving-name" placeholder="e.g. Slice, Cookie">
+            </div>
+            <div class="form-group">
+              <label for="custom-serving-weight">Weight (grams per serving)</label>
+              <input type="number" id="custom-serving-weight" step="0.1" min="0.1" placeholder="e.g. 50">
+            </div>
+          </div>
+        </div>
+
+        <!-- Micronutrients Details (Optional) -->
+        <div style="margin-top: 0.5rem; border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 0.75rem;">
+          <h4 style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Micronutrients (Optional, per 100g)</h4>
+          <div class="form-grid-2">
+            
+            <div class="form-group">
+              <label for="custom-sodium">Sodium (mg)</label>
+              <input type="number" id="custom-sodium" min="0" placeholder="0">
+            </div>
+
+            <div class="form-group">
+              <label for="custom-potassium">Potassium (mg)</label>
+              <input type="number" id="custom-potassium" min="0" placeholder="0">
+            </div>
+
+            <div class="form-group">
+              <label for="custom-calcium">Calcium (mg)</label>
+              <input type="number" id="custom-calcium" min="0" placeholder="0">
+            </div>
+
+            <div class="form-group">
+              <label for="custom-iron">Iron (mg)</label>
+              <input type="number" id="custom-iron" step="0.01" min="0" placeholder="0">
+            </div>
+
+            <div class="form-group full-width">
+              <label for="custom-vitaminc">Vitamin C (mg)</label>
+              <input type="number" id="custom-vitaminc" step="0.1" min="0" placeholder="0">
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('modal-custom-food')">Cancel</button>
+          <button type="submit" class="btn-primary" id="btn-save-custom-food">Create Food</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>
